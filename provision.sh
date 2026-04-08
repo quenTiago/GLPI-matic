@@ -26,7 +26,7 @@ echo "=== Configuration des permissions ==="
 chown -R www-data:www-data /var/www/html/glpi
 chmod -R 755 /var/www/html/glpi
 
-echo "=== Configuration d'Apache (VirtualHost) ==="
+echo "=== Configuration d'Apache (VirtualHost GLPI) ==="
 # Création du VHost en pointant sur le dossier /public comme recommandé pour GLPI 10+
 cat <<EOF > /etc/apache2/sites-available/glpi.conf
 <VirtualHost *:80>
@@ -50,4 +50,30 @@ a2dissite 000-default.conf
 a2ensite glpi.conf
 systemctl restart apache2
 
-echo "=== Installation terminée ! Rendez-vous sur http://localhost:8080 ==="
+echo "=== Installation de phpMyAdmin ==="
+apt-get install -y phpmyadmin
+
+# Création d'un VirtualHost Apache dédié sur le port 8081
+cat <<EOF > /etc/apache2/sites-available/phpmyadmin.conf
+Listen 8081
+
+<VirtualHost *:8081>
+    DocumentRoot /usr/share/phpmyadmin
+
+    <Directory /usr/share/phpmyadmin>
+        Options SymLinksIfOwnerMatch
+        DirectoryIndex index.php
+        Require all granted
+    </Directory>
+
+    ErrorLog \${APACHE_LOG_DIR}/phpmyadmin_error.log
+    CustomLog \${APACHE_LOG_DIR}/phpmyadmin_access.log combined
+</VirtualHost>
+EOF
+
+a2ensite phpmyadmin.conf
+systemctl restart apache2
+
+echo "=== Installation terminée ! ==="
+echo "  → GLPI        : http://localhost:8080"
+echo "  → phpMyAdmin  : http://localhost:8081  (user: glpiuser / pwd: glpipwd)"
